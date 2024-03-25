@@ -3,15 +3,17 @@ use bevy::{
     window::PrimaryWindow,
 };
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{HashMap, HashSet, VecDeque},
     time::Duration,
 };
+mod block;
 mod chunk_loader_unloader;
 mod inventory_ui;
 mod player;
 mod rock;
 mod tree;
 
+use block::*;
 use chunk_loader_unloader::*;
 use inventory_ui::*;
 use player::*;
@@ -43,17 +45,6 @@ pub struct StaticCollisionCircle {
     radius: f32,
 }
 
-#[derive(PartialEq, Hash, Eq, Clone, Copy)]
-pub enum BlockType {
-    Wood,
-    Stone(i32),
-}
-
-#[derive(Component)]
-pub struct BlockEntity {
-    // pos: (i32, i32),
-    // block_type: BlockType,
-}
 #[derive(Component)]
 pub struct Collectible {
     pos: Vec2,
@@ -76,6 +67,11 @@ struct MousePosInWorld {
     pos: Vec2,
 }
 
+#[derive(Resource)]
+struct BlockUpdateQueue {
+    queue: VecDeque<Option<(i32, i32)>>,
+}
+
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
@@ -95,6 +91,9 @@ fn main() {
             slots: vec![],
         })
         .insert_resource(MousePosInWorld { pos: Vec2::ZERO })
+        .insert_resource(BlockUpdateQueue {
+            queue: VecDeque::new(),
+        })
         .add_systems(Startup, setup)
         // .add_systems(Update, print_num_entites)
         .add_systems(
@@ -104,12 +103,14 @@ fn main() {
                 entity_collide_static_circle.after(move_player),
                 update_physics_body_movement.after(entity_collide_static_circle),
                 move_camera,
-                block_placer_system,
+                block_placer_breaker_system,
                 entity_collide_block.after(move_player),
                 player_gather_collectible,
                 calculate_mouse_pos_in_world,
                 update_collectibles,
                 change_player_selected_slot,
+                update_processor_system,
+                update_blocks,
                 unload_far_collectibles.run_if(on_timer(Duration::from_millis(500))),
                 // unload_far_trees.run_if(on_timer(Duration::from_millis(500))),
                 // unload_far_rocks.run_if(on_timer(Duration::from_millis(500))),
@@ -130,28 +131,12 @@ fn main() {
                 save_players.before(despawn_players),
                 despawn_players,
                 unload_all_collectibles,
-                save_all_blocks,
+                unload_all_blocks,
                 save_chunks_to_file
                     .after(unload_all_collectibles)
-                    .after(save_all_blocks),
+                    .after(unload_all_blocks),
                 unload_all_chunk_backgrounds_and_clear_chunks_to_save.after(save_chunks_to_file),
             ),
-            // (
-            //     save_players.before(despawn_players),
-            //     despawn_players,
-            //     // save_all_trees.before(despawn_all_trees),
-            //     // save_all_rocks.before(despawn_all_rocks),
-            //     unload_all_collectibles,
-            //     save_all_blocks.before(unload_all_chunks),
-            //     save_chunks_to_file,
-            //     // .after(save_all_blocks)
-            //     // .after(save_all_trees)
-            //     // .after(save_all_rocks)
-            //     // .before(unload_all_chunks),
-            //     // despawn_all_trees,
-            //     // despawn_all_rocks,
-            //     unload_all_chunks,
-            // ),
         )
         .run();
 }
@@ -188,18 +173,6 @@ fn setup(mut commands: Commands) {
     commands.spawn(camera_bundle);
 }
 
-// fn spawn_map(mut commands: Commands) {
-//     commands.spawn((SpriteBundle {
-//         sprite: Sprite {
-//             color: Color::rgb(0.5, 0.7, 0.3),
-//             custom_size: Some(Vec2::new(MAP_SIZE, MAP_SIZE)),
-//             ..default()
-//         },
-//         transform: Transform::from_translation(Vec3::new(0., 0., -0.1)),
-//         ..default()
-//     },));
-// }
-
 fn calculate_mouse_pos_in_world(
     camera: Query<&Transform, (With<Camera>, Without<Player>)>,
     q_windows: Query<&Window, With<PrimaryWindow>>,
@@ -228,7 +201,12 @@ fn insert_block_to_inventory(
     block_type: BlockType,
     number: usize,
 ) {
+    // dbg!(block_type);
+    let block_type = remove_block_type_data_for_inventory(block_type);
+    // dbg!(block_type);
+
     let count = *(inventory.blocks.get(&block_type).unwrap_or(&0));
+    dbg!(count);
     inventory.blocks.insert(block_type.clone(), count + number);
 
     let mut empty_slot = inventory.slots.len();
@@ -236,11 +214,14 @@ fn insert_block_to_inventory(
     for i in 0..inventory.slots.len() {
         match &inventory.slots[i] {
             Some(slot) => {
+                // dbg!(slot.item_type);
                 if slot.item_type == block_type {
                     inventory.slots[i] = Some(InventorySlot {
                         item_type: block_type,
                         count: slot.count + number,
                     });
+
+                    dbg!("lmoa");
 
                     return;
                 }
@@ -248,6 +229,7 @@ fn insert_block_to_inventory(
             None => {
                 if empty_slot == inventory.slots.len() {
                     empty_slot = i;
+                    dbg!("lmoa2");
                 }
             }
         }
@@ -257,15 +239,20 @@ fn insert_block_to_inventory(
             item_type: block_type,
             count: number,
         }));
+        dbg!("lmo3");
     } else {
         inventory.slots[empty_slot] = Some(InventorySlot {
             item_type: block_type,
             count: number,
         });
+        dbg!("lmoa4");
     }
 }
 
-fn pop_block_from_current_slot(inventory: &mut ResMut<PlayerInventory>) -> Option<BlockType> {
+fn pop_block_from_current_slot(
+    inventory: &mut ResMut<PlayerInventory>,
+    dir: i32,
+) -> Option<BlockType> {
     let selected_slot = inventory.selected_slot;
     if selected_slot >= inventory.slots.len() {
         return None;
@@ -273,8 +260,8 @@ fn pop_block_from_current_slot(inventory: &mut ResMut<PlayerInventory>) -> Optio
     if let Some(slot) = &inventory.slots[selected_slot].clone() {
         let &count_in_inventory = inventory.blocks.get(&slot.item_type).unwrap_or(&0);
         let count_in_slot = slot.count;
-
         let block_type = slot.item_type.clone();
+        let block_type2 = get_block_type_after_popped_from_inventory(block_type, dir);
         if count_in_inventory > 1 && count_in_slot > 1 {
             inventory.slots[selected_slot] = Some(InventorySlot {
                 item_type: block_type.clone(),
@@ -283,24 +270,53 @@ fn pop_block_from_current_slot(inventory: &mut ResMut<PlayerInventory>) -> Optio
             inventory
                 .blocks
                 .insert(block_type.clone(), count_in_slot - 1);
-            return Some(block_type);
+            return Some(block_type2);
         } else {
             inventory.slots[selected_slot] = None;
             inventory.blocks.remove(&block_type);
-            return Some(block_type);
+            return Some(block_type2);
         }
     }
     None
 }
 
-// fn get_breaking_time(block_type: BlockType) -> f32 {
-//     match block_type {
-//         BlockType::Wood => 1.,
-//         BlockType::Stone => 2.,
-//     }
-// }
+fn create_block_update(pos: (i32, i32), block_update_queue: &mut ResMut<BlockUpdateQueue>) {
+    block_update_queue.queue.push_back(Some(pos));
+    block_update_queue.queue.push_back(Some((pos.0, pos.1 + 1)));
+    block_update_queue.queue.push_back(Some((pos.0, pos.1 - 1)));
+    block_update_queue.queue.push_back(Some((pos.0 + 1, pos.1)));
+    block_update_queue.queue.push_back(Some((pos.0 - 1, pos.1)));
+}
 
-fn block_placer_system(
+fn get_facing_dir(block_pos: (i32, i32), player_pos: Vec3) -> i32 {
+    let pointing = Vec2::new(
+        block_pos.0 as f32 - player_pos.x,
+        block_pos.1 as f32 - player_pos.y,
+    );
+    if pointing.y >= 0. {
+        if pointing.x.abs() <= pointing.y.abs() {
+            0
+        } else {
+            if pointing.x >= 0. {
+                1
+            } else {
+                3
+            }
+        }
+    } else {
+        if pointing.x.abs() <= pointing.y.abs() {
+            2
+        } else {
+            if pointing.x >= 0. {
+                1
+            } else {
+                3
+            }
+        }
+    }
+}
+
+fn block_placer_breaker_system(
     mut commands: Commands,
     mut block_map: ResMut<Map>,
     mouse: Res<Input<MouseButton>>,
@@ -308,6 +324,7 @@ fn block_placer_system(
     mut inventory: ResMut<PlayerInventory>,
     mouse_world: ResMut<MousePosInWorld>,
     time: Res<Time>,
+    mut block_update_queue: ResMut<BlockUpdateQueue>,
 ) {
     let (player_transform, mut player) = player_transforms.get_single_mut().unwrap();
     let player_translation = player_transform.translation;
@@ -331,9 +348,18 @@ fn block_placer_system(
                 player.place_cooldown = 0.;
                 if !block_map.blocks.contains_key(&pos) {
                     player.place_cooldown = 0.2;
-                    if let Some(block_type) = pop_block_from_current_slot(&mut inventory) {
+                    let dir = get_facing_dir(pos, player_translation);
+                    if let Some(block_type) = pop_block_from_current_slot(&mut inventory, dir) {
                         println!("block placed at {}, {}", pos.0, pos.1);
-                        spawn_block(&mut commands, &mut block_map, pos, block_type);
+                        spawn_block(
+                            &mut commands,
+                            &mut block_map,
+                            pos,
+                            block_type,
+                            &mut block_update_queue,
+                        );
+                        dbg!(block_type);
+                        create_block_update(pos, &mut block_update_queue);
                     }
                 }
             } else {
@@ -345,9 +371,11 @@ fn block_placer_system(
                 player.break_cooldown = 0.;
                 if let Some(block_type) = despawn_block(commands, block_map, pos) {
                     insert_block_to_inventory(&mut inventory, block_type, 1);
+                    create_block_update(pos, &mut block_update_queue);
                 }
-            } else if let Some(_) = block_map.blocks.get(&pos) {
-                player.break_cooldown += time.delta_seconds();
+            } else if let Some(entry) = block_map.blocks.get(&pos) {
+                player.break_cooldown +=
+                    time.delta_seconds() * get_block_breaking_speed_multiplier(entry.1);
             } else {
                 player.break_cooldown = 0.;
             }
@@ -358,58 +386,247 @@ fn block_placer_system(
     }
 }
 
-fn despawn_block(
-    mut commands: Commands,
-    mut block_map: ResMut<Map>,
-    pos: (i32, i32),
-) -> Option<BlockType> {
-    if let Some((entity, block_type)) = block_map.blocks.remove(&pos) {
-        commands.entity(entity).despawn();
-        return Some(block_type.clone());
-    }
-    None
-}
-
-fn get_block_color(block_type: BlockType) -> Color {
-    match block_type {
-        BlockType::Wood => Color::rgb(0.4, 0.2, 0.),
-        BlockType::Stone(_) => Color::rgb(0.3, 0.3, 0.3),
-    }
-}
-
-fn spawn_block(
-    commands: &mut Commands,
+fn update_wire_line(
+    init_pos: (i32, i32),
     block_map: &mut ResMut<Map>,
-    pos: (i32, i32),
-    block_type: BlockType,
+    block_update_queue: &mut ResMut<BlockUpdateQueue>,
 ) {
-    let id = commands
-        .spawn((
-            SpriteBundle {
-                sprite: Sprite {
-                    color: {
-                        match block_type {
-                            BlockType::Wood => Color::rgb(0.4, 0.2, 0.),
-                            BlockType::Stone(_) => Color::rgb(0.3, 0.3, 0.3),
-                        }
-                    },
-                    custom_size: Some(Vec2::new(1., 1.)),
-                    ..default()
-                },
-                transform: Transform {
-                    translation: Vec3::new(pos.0 as f32, pos.1 as f32, 0.),
-                    ..default()
-                },
-                ..default()
-            },
-            BlockEntity {
-                // pos: pos,
-                // block_type: block_type,
-            },
-        ))
-        .id();
+    let mut queue = VecDeque::new();
+    let mut to_update_next = HashSet::new();
+    queue.push_back(init_pos);
+    while !queue.is_empty() {
+        let pos = queue.pop_front().unwrap();
+        let new_entity;
 
-    block_map.blocks.insert(pos, (id, block_type));
+        if let Some((entity, block_type)) = block_map.blocks.get(&pos) {
+            new_entity = *entity;
+            match block_type {
+                BlockType::Wire(old_power) => {
+                    // new_block_type = BlockType::Wire(0);
+                    let mut new_power = 0;
+                    let old_power = *old_power;
+
+                    let mut set_new_power = |block_type1, inc_dir| match block_type1 {
+                        BlockType::Stone(_) => {
+                            new_power = 128;
+                        }
+                        BlockType::Wire(power) => new_power = (power - 1).max(new_power),
+                        BlockType::Repeater(power, dir) => {
+                            if dir != (inc_dir + 2) % 4 {
+                                new_power = 128.min(128 * power).max(new_power);
+                            }
+                        }
+                        BlockType::Inverter(power, dir) => {
+                            if dir != (inc_dir + 2) % 4 {
+                                new_power = 128.min(128 * power).max(new_power);
+                            }
+                        }
+                        _ => {}
+                    };
+
+                    if let Some((_, block_type1)) = block_map.blocks.get(&(pos.0, pos.1 + 1)) {
+                        set_new_power(*block_type1, 0);
+                    }
+                    if let Some((_, block_type1)) = block_map.blocks.get(&(pos.0, pos.1 - 1)) {
+                        set_new_power(*block_type1, 2);
+                    }
+                    if let Some((_, block_type1)) = block_map.blocks.get(&(pos.0 + 1, pos.1)) {
+                        set_new_power(*block_type1, 1);
+                    }
+                    if let Some((_, block_type1)) = block_map.blocks.get(&(pos.0 - 1, pos.1)) {
+                        set_new_power(*block_type1, 3);
+                    }
+                    if new_power != old_power {
+                        block_map
+                            .blocks
+                            .insert(pos, (new_entity, BlockType::Wire(new_power)));
+                        // create_block_update(pos, block_update_queue);
+                        queue.push_back(pos);
+                        queue.push_back((pos.0, pos.1 + 1));
+                        queue.push_back((pos.0, pos.1 - 1));
+                        queue.push_back((pos.0 + 1, pos.1));
+                        queue.push_back((pos.0 - 1, pos.1));
+                        to_update_next.insert((pos.0, pos.1 + 1));
+                        to_update_next.insert((pos.0, pos.1 - 1));
+                        to_update_next.insert((pos.0 + 1, pos.1));
+                        to_update_next.insert((pos.0 - 1, pos.1));
+                    }
+                    to_update_next.remove(&pos);
+                }
+                _ => {}
+            }
+        }
+    }
+    for update_pos in to_update_next {
+        block_update_queue.queue.push_back(Some(update_pos));
+    }
+}
+
+fn update_processor_system(
+    mut block_update_queue: ResMut<BlockUpdateQueue>,
+    mut block_map: ResMut<Map>,
+) {
+    block_update_queue.queue.push_back(None);
+    // let mut done = HashSet::new();
+    while !block_update_queue.queue.is_empty() {
+        if let Some(pos) = block_update_queue.queue.pop_front().unwrap() {
+            // if done.contains(&pos) {
+            //     continue;
+            // }
+            // done.insert(pos);
+            // let mut new_block_type: BlockType;
+            let new_entity;
+
+            if let Some((entity, block_type)) = block_map.blocks.get(&pos) {
+                new_entity = *entity;
+                match block_type {
+                    BlockType::Wire(old_power) => {
+                        // new_block_type = BlockType::Wire(0);
+                        // let mut new_power = 0;
+                        // let old_power = *old_power;
+
+                        // let mut set_new_power = |block_type1, inc_dir| match block_type1 {
+                        //     BlockType::Stone(_) => {
+                        //         new_power = 128;
+                        //     }
+                        //     BlockType::Wire(power) => new_power = (power - 1).max(new_power),
+                        //     BlockType::Repeater(power, dir) => {
+                        //         if dir != (inc_dir + 2) % 4 {
+                        //             new_power = 128.min(128 * power).max(new_power);
+                        //         }
+                        //     }
+                        //     BlockType::Inverter(power, dir) => {
+                        //         if dir != (inc_dir + 2) % 4 {
+                        //             new_power = 128.min(128 * power).max(new_power);
+                        //         }
+                        //     }
+                        //     _ => {}
+                        // };
+
+                        // if let Some((_, block_type1)) = block_map.blocks.get(&(pos.0, pos.1 + 1)) {
+                        //     set_new_power(*block_type1, 0);
+                        // }
+                        // if let Some((_, block_type1)) = block_map.blocks.get(&(pos.0, pos.1 - 1)) {
+                        //     set_new_power(*block_type1, 2);
+                        // }
+                        // if let Some((_, block_type1)) = block_map.blocks.get(&(pos.0 + 1, pos.1)) {
+                        //     set_new_power(*block_type1, 1);
+                        // }
+                        // if let Some((_, block_type1)) = block_map.blocks.get(&(pos.0 - 1, pos.1)) {
+                        //     set_new_power(*block_type1, 3);
+                        // }
+                        update_wire_line(pos, &mut block_map, &mut block_update_queue);
+                        // if new_power != old_power {
+                        // block_map
+                        //     .blocks
+                        //     .insert(pos, (new_entity, BlockType::Wire(new_power)));
+                        // create_block_update(pos, &mut block_update_queue);
+                        // }
+                    }
+                    BlockType::Repeater(old_power, dir) => {
+                        // new_block_type = BlockType::Wire(0);
+                        let mut new_power = 0;
+                        let old_power = *old_power;
+                        let dir = *dir;
+
+                        let mut set_new_power = |block_type1, inc_dir| match block_type1 {
+                            BlockType::Stone(_) => {
+                                if dir == inc_dir {
+                                    new_power = 1;
+                                }
+                            }
+                            BlockType::Wire(power) => {
+                                if inc_dir == dir {
+                                    new_power = 1.min(power);
+                                }
+                            }
+                            // BlockType::Repeater(power, other_dir) => new_power = 128.min(128 * power),
+                            _ => {}
+                        };
+
+                        if let Some((_, block_type1)) = block_map.blocks.get(&(pos.0, pos.1 + 1)) {
+                            set_new_power(*block_type1, 0);
+                        }
+                        if let Some((_, block_type1)) = block_map.blocks.get(&(pos.0, pos.1 - 1)) {
+                            set_new_power(*block_type1, 2);
+                        }
+                        if let Some((_, block_type1)) = block_map.blocks.get(&(pos.0 + 1, pos.1)) {
+                            set_new_power(*block_type1, 1);
+                        }
+                        if let Some((_, block_type1)) = block_map.blocks.get(&(pos.0 - 1, pos.1)) {
+                            set_new_power(*block_type1, 3);
+                        }
+                        block_map
+                            .blocks
+                            .insert(pos, (new_entity, BlockType::Repeater(new_power, dir)));
+                        if new_power != old_power {
+                            create_block_update(pos, &mut block_update_queue);
+                        }
+                    }
+                    BlockType::Inverter(old_power, dir) => {
+                        // new_block_type = BlockType::Wire(0);
+                        let mut new_power = 1;
+                        let old_power = *old_power;
+                        let dir = *dir;
+
+                        let mut set_new_power = |block_type1, inc_dir| match block_type1 {
+                            BlockType::Stone(_) => {
+                                if dir == inc_dir {
+                                    new_power = 0;
+                                }
+                            }
+                            BlockType::Wire(power) => {
+                                if inc_dir == dir {
+                                    new_power = 1 - 1.min(power);
+                                }
+                            }
+                            BlockType::Repeater(power, dir2) => {
+                                if inc_dir == dir && dir == dir2 {
+                                    new_power = 1 - power;
+                                }
+                            }
+                            // BlockType::Repeater(power, other_dir) => new_power = 128.min(128 * power),
+                            _ => {}
+                        };
+
+                        if let Some((_, block_type1)) = block_map.blocks.get(&(pos.0, pos.1 + 1)) {
+                            set_new_power(*block_type1, 0);
+                        }
+                        if let Some((_, block_type1)) = block_map.blocks.get(&(pos.0, pos.1 - 1)) {
+                            set_new_power(*block_type1, 2);
+                        }
+                        if let Some((_, block_type1)) = block_map.blocks.get(&(pos.0 + 1, pos.1)) {
+                            set_new_power(*block_type1, 1);
+                        }
+                        if let Some((_, block_type1)) = block_map.blocks.get(&(pos.0 - 1, pos.1)) {
+                            set_new_power(*block_type1, 3);
+                        }
+                        block_map
+                            .blocks
+                            .insert(pos, (new_entity, BlockType::Inverter(new_power, dir)));
+                        if new_power != old_power {
+                            create_block_update(pos, &mut block_update_queue);
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            // if should_insert {
+            //     block_map.blocks.insert(pos, (new_entity, new_block_type));
+            // }
+        } else {
+            break;
+        }
+    }
+}
+
+fn update_blocks(block_map: Res<Map>, mut blocks: Query<(&mut Sprite, &BlockEntity)>) {
+    for (mut sprite, block_entity) in &mut blocks {
+        let pos = block_entity.pos;
+        if let Some((_, block_type)) = block_map.blocks.get(&pos) {
+            sprite.color = get_block_color(*block_type);
+        }
+    }
 }
 
 fn update_physics_body_movement(
@@ -468,6 +685,9 @@ fn entity_collide_block(
                 match block_entity.1 {
                     BlockType::Wood => {}
                     BlockType::Stone(_) => {}
+                    _ => {
+                        continue;
+                    }
                 }
                 if (body_pos.x - block_pos.0 as f32).abs() < 0.5 + coll_box.width / 2.
                     && (body_pos.y - block_pos.1 as f32).abs() < 0.5 + coll_box.height / 2.
@@ -512,6 +732,7 @@ fn entity_collide_block(
                 let block_entity = block_map.blocks.get(&block_pos).unwrap().clone();
                 match block_entity.1 {
                     BlockType::Wood => {}
+                    BlockType::Stone(_) => {}
                     _ => {
                         continue;
                     }

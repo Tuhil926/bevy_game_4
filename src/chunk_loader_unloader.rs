@@ -15,11 +15,14 @@ pub struct ChunksToSave {
 pub struct ChunkBackground {}
 
 use crate::{
-    generate_rocks, generate_trees, insert_block_to_inventory, make_string_rep_of_rock,
-    make_string_rep_of_tree, spawn_block, spawn_rock_from_string_rep, spawn_tree_from_string_rep,
-    BlockEntity, BlockType, Collectible, CollisionBox, Map, PhysicsBody, Player, PlayerInventory,
-    Rock, Tree,
+    generate_rocks, generate_trees, get_block_rep_from_string_rep_and_pos,
+    get_block_type_from_string_rep, get_string_rep_from_block_type, insert_block_to_inventory,
+    make_string_rep_of_rock, make_string_rep_of_tree, spawn_block, spawn_rock_from_string_rep,
+    spawn_tree_from_string_rep, BlockEntity, BlockUpdateQueue, Collectible, CollisionBox, Map,
+    PhysicsBody, Player, PlayerInventory, Rock, Tree,
 };
+
+const RENDER_RADIUS: i32 = 2;
 
 pub fn save_players(
     players: Query<(&PhysicsBody, &Transform), With<Player>>,
@@ -27,19 +30,18 @@ pub fn save_players(
 ) {
     let mut players_string = String::new();
     for (physics_body, transform) in &players {
-        players_string.push_str("pos ");
-        players_string.push_str(transform.translation.x.to_string().as_str());
-        players_string.push(' ');
-        players_string.push_str(transform.translation.y.to_string().as_str());
-        players_string.push(' ');
-        players_string.push_str(physics_body.vel.x.to_string().as_str());
-        players_string.push(' ');
-        players_string.push_str(physics_body.vel.y.to_string().as_str());
-        players_string.push(' ');
-        players_string.push_str(physics_body.acc.x.to_string().as_str());
-        players_string.push(' ');
-        players_string.push_str(physics_body.acc.y.to_string().as_str());
-        players_string.push('\n');
+        players_string.push_str(
+            format!(
+                "pos {} {} {} {} {} {}\n",
+                transform.translation.x,
+                transform.translation.y,
+                physics_body.vel.x,
+                physics_body.vel.y,
+                physics_body.acc.x,
+                physics_body.acc.y
+            )
+            .as_str(),
+        );
     }
 
     for i in 0..inventory.slots.len() {
@@ -62,29 +64,6 @@ pub fn save_players(
     }
 
     fs::write("./assets/players.txt", players_string).expect("Could not save players!");
-}
-
-pub fn get_block_type_from_string_rep(block_type: &str, data: &[&str]) -> Option<BlockType> {
-    dbg!(data);
-    match block_type {
-        "wood" => Some(BlockType::Wood),
-        "stone" => Some(BlockType::Stone(if data.len() > 0 {
-            data[0].parse::<i32>().unwrap()
-        } else {
-            0
-        })),
-        _ => None,
-    }
-}
-
-pub fn get_string_rep_from_block_type(block_type: Option<BlockType>) -> (String, String) {
-    match block_type {
-        Some(block) => match block {
-            BlockType::Wood => (String::from("wood"), String::new()),
-            BlockType::Stone(number) => (String::from("stone"), format!("{}", number)),
-        },
-        None => (String::from("nothing"), String::new()),
-    }
 }
 
 pub fn spawn_players(
@@ -169,6 +148,7 @@ pub fn load_close_chunks(
     mut block_map: ResMut<Map>,
     player: Query<&Transform, With<Player>>,
     asset_server: Res<AssetServer>,
+    mut block_update_queue: ResMut<BlockUpdateQueue>,
 ) {
     let player_translation = player.get_single().unwrap().translation;
     let player_pos = (
@@ -176,10 +156,8 @@ pub fn load_close_chunks(
         (player_translation.y / 16.).floor() as i32,
     );
 
-    let render_radius = 1;
-
-    for i in -render_radius..(render_radius + 1) {
-        for j in -render_radius..(render_radius + 1) {
+    for i in -RENDER_RADIUS..(RENDER_RADIUS + 1) {
+        for j in -RENDER_RADIUS..(RENDER_RADIUS + 1) {
             load_chunk(
                 &mut commands,
                 &mut chunks_to_save,
@@ -188,6 +166,7 @@ pub fn load_close_chunks(
                 &mut block_map,
                 &asset_server,
                 (player_pos.0 + i, player_pos.1 + j),
+                &mut block_update_queue,
             );
         }
     }
@@ -201,6 +180,7 @@ pub fn load_chunk(
     block_map: &mut ResMut<Map>,
     asset_server: &Res<AssetServer>,
     pos: (i32, i32),
+    block_update_queue: &mut ResMut<BlockUpdateQueue>,
 ) {
     if chunks_to_save.chunks_loaded.contains(&pos) {
         return;
@@ -253,6 +233,7 @@ pub fn load_chunk(
                     block_map,
                     (x, y),
                     get_block_type_from_string_rep(parts[1], &parts[4..]).unwrap(),
+                    block_update_queue,
                 )
             }
             _ => {}
@@ -277,7 +258,9 @@ pub fn unload_far_chunk_backgrounds(
             (player_translation.y / 16.).floor() as i32,
         );
 
-        if (pos.0 - player_pos.0).abs() <= 1 && (pos.1 - player_pos.1).abs() <= 1 {
+        if (pos.0 - player_pos.0).abs() <= RENDER_RADIUS
+            && (pos.1 - player_pos.1).abs() <= RENDER_RADIUS
+        {
             continue;
         }
         commands.entity(entity).despawn();
@@ -307,23 +290,6 @@ pub fn save_chunks_to_file(mut chunks_to_save: ResMut<ChunksToSave>) {
     chunks_to_save.chunks.clear();
 }
 
-pub fn get_block_rep_from_string_rep_and_pos(
-    string_rep: (String, String),
-    block_pos: (i32, i32),
-) -> String {
-    let mut block_string = String::new();
-    block_string.push_str("block ");
-    block_string.push_str(&(string_rep.0).as_str());
-    block_string.push(' ');
-    block_string.push_str(block_pos.0.to_string().as_str());
-    block_string.push(' ');
-    block_string.push_str(block_pos.1.to_string().as_str());
-    block_string.push(' ');
-    block_string.push_str(&(string_rep.1).as_str());
-    block_string.push('\n');
-    block_string
-}
-
 pub fn unload_far_blocks(
     mut commands: Commands,
     blocks: Query<(&Transform, Entity), With<BlockEntity>>,
@@ -341,24 +307,14 @@ pub fn unload_far_blocks(
             (block_transform.translation.x / 16.).floor() as i32,
             (block_transform.translation.y / 16.).floor() as i32,
         );
-        if (pos.0 - (player.x / 16.).floor() as i32).abs() <= 1
-            && (pos.1 - (player.y / 16.).floor() as i32).abs() <= 1
+        if (pos.0 - (player.x / 16.).floor() as i32).abs() <= RENDER_RADIUS
+            && (pos.1 - (player.y / 16.).floor() as i32).abs() <= RENDER_RADIUS
         {
             continue;
         }
         let string_rep =
             get_string_rep_from_block_type(Some(block_map.blocks.get(&block_pos).unwrap().1));
         let block_string = get_block_rep_from_string_rep_and_pos(string_rep, block_pos);
-        // let mut block_string = String::new();
-        // block_string.push_str("block ");
-        // block_string.push_str(&(string_rep.0).as_str());
-        // block_string.push(' ');
-        // block_string.push_str(block_pos.0.to_string().as_str());
-        // block_string.push(' ');
-        // block_string.push_str(block_pos.1.to_string().as_str());
-        // block_string.push(' ');
-        // block_string.push_str(&(string_rep.1).as_str());
-        // block_string.push('\n');
 
         if let Some(block_str) = chunks_to_save.chunks.get_mut(&pos) {
             block_str.push_str(block_string.as_str());
@@ -371,7 +327,7 @@ pub fn unload_far_blocks(
     }
 }
 
-pub fn save_all_blocks(
+pub fn unload_all_blocks(
     mut commands: Commands,
     blocks: Query<(&Transform, Entity), With<BlockEntity>>,
     mut block_map: ResMut<Map>,
@@ -389,19 +345,6 @@ pub fn save_all_blocks(
         let string_rep =
             get_string_rep_from_block_type(Some(block_map.blocks.get(&block_pos).unwrap().1));
         let block_string = get_block_rep_from_string_rep_and_pos(string_rep, block_pos);
-        // let mut block_string = String::new();
-        // let string_rep =
-        //     get_string_rep_from_block_type(Some(block_map.blocks.get(&block_pos).unwrap().1));
-        // block_string.push_str("block ");
-        // block_string.push_str(&(string_rep.0).as_str());
-        // block_string.push(' ');
-        // block_string.push_str(block_pos.0.to_string().as_str());
-        // block_string.push(' ');
-        // block_string.push_str(block_pos.1.to_string().as_str());
-        // block_string.push(' ');
-        // block_string.push_str(&(string_rep.1).as_str());
-        // block_string.push('\n');
-
         if let Some(block_str) = chunks_to_save.chunks.get_mut(&pos) {
             block_str.push_str(block_string.as_str());
         } else {
@@ -433,7 +376,9 @@ pub fn unload_far_collectibles(
             (collectible.pos.y / 16.).floor() as i32,
         );
 
-        if (pos.0 - player_pos.0).abs() <= 1 && (pos.1 - player_pos.1).abs() <= 1 {
+        if (pos.0 - player_pos.0).abs() <= RENDER_RADIUS
+            && (pos.1 - player_pos.1).abs() <= RENDER_RADIUS
+        {
             return;
         }
         if let Some(chunk_str) = chunks_to_save.chunks.get_mut(&pos) {
