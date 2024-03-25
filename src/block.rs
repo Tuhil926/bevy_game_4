@@ -44,14 +44,36 @@ pub fn get_block_color(block_type: BlockType) -> Color {
         BlockType::Wood => Color::rgb(0.4, 0.2, 0.),
         BlockType::Stone(_) => Color::rgb(0.3, 0.3, 0.3),
         BlockType::Wire(power) => Color::rgb(0.4 + 0.004 * power as f32, 0., 0.),
-        BlockType::Repeater(power, _) => Color::rgb(
-            0.5 + 0.5 * power as f32,
-            0.5 + 0.5 * power as f32,
-            0.5 + 0.5 * power as f32,
-        ),
-        BlockType::Inverter(power, _) => {
-            Color::rgb(0., 0.5 + 0.5 * power as f32, 0.5 + 0.5 * (1 - power) as f32)
+        BlockType::Repeater(power, _) => default(),
+        BlockType::Inverter(power, _) => default(),
+    }
+}
+
+pub fn get_block_dir(block_type: BlockType) -> i32 {
+    match block_type {
+        BlockType::Repeater(_, dir) => dir,
+        BlockType::Inverter(_, dir) => dir,
+        _ => 0,
+    }
+}
+
+pub fn get_block_texture(block_type: BlockType, asset_server: &Res<AssetServer>) -> Handle<Image> {
+    match block_type {
+        BlockType::Inverter(power, dir) => {
+            if power == 0 {
+                asset_server.load("inverter_powered.png")
+            } else {
+                asset_server.load("inverter_unpowered.png")
+            }
         }
+        BlockType::Repeater(power, dir) => {
+            if power == 0 {
+                asset_server.load("repeater_unpowered.png")
+            } else {
+                asset_server.load("repeater_powered.png")
+            }
+        }
+        _ => default(),
     }
 }
 
@@ -61,6 +83,7 @@ pub fn spawn_block(
     pos: (i32, i32),
     block_type: BlockType,
     block_update_queue: &mut ResMut<BlockUpdateQueue>,
+    asset_server: &Res<AssetServer>,
 ) {
     let id = commands
         .spawn((
@@ -73,7 +96,11 @@ pub fn spawn_block(
                 transform: Transform {
                     translation: Vec3::new(pos.0 as f32, pos.1 as f32, 0.),
                     ..default()
-                },
+                }
+                .with_rotation(Quat::from_rotation_z(
+                    (get_block_dir(block_type) as f32) * -3.1415926535 / 2.,
+                )),
+                texture: get_block_texture(block_type, asset_server),
                 ..default()
             },
             BlockEntity {

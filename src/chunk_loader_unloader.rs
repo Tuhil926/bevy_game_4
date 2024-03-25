@@ -234,6 +234,7 @@ pub fn load_chunk(
                     (x, y),
                     get_block_type_from_string_rep(parts[1], &parts[4..]).unwrap(),
                     block_update_queue,
+                    &asset_server,
                 )
             }
             _ => {}

@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{get_block_color, AppState, InventorySlot, PlayerInventory};
+use crate::{get_block_color, get_block_texture, AppState, InventorySlot, PlayerInventory};
 
 #[derive(Component)]
 pub struct InventoryUI;
@@ -62,6 +62,8 @@ pub fn build_inventory_ui(commands: &mut Commands, asset_server: &Res<AssetServe
                             margin: UiRect::horizontal(Val::Px(10.)),
                             ..default()
                         },
+                        transform: Transform::default()
+                            .with_rotation(Quat::from_rotation_z(3.1415926535)),
                         background_color: Color::RED.into(),
                         ..default()
                     },
@@ -77,14 +79,22 @@ pub fn build_inventory_ui(commands: &mut Commands, asset_server: &Res<AssetServe
 }
 
 fn update_inventory_ui(
-    mut inventory_ui_slots: Query<(&mut BackgroundColor, &mut Style, &InventoryUISlot)>,
+    mut inventory_ui_slots: Query<(
+        &mut BackgroundColor,
+        &mut Style,
+        &mut UiImage,
+        &InventoryUISlot,
+    )>,
     inventory: Res<PlayerInventory>,
+    asset_server: Res<AssetServer>,
 ) {
-    for (mut color, mut style, &inventory_ui_slot) in &mut inventory_ui_slots {
+    for (mut color, mut style, mut img, &inventory_ui_slot) in &mut inventory_ui_slots {
         if let Some(Some(slot)) = inventory.slots.get(inventory_ui_slot.index) {
             color.0 = get_block_color(slot.item_type);
+            *img = get_block_texture(slot.item_type, &asset_server).into();
         } else {
             color.0 = Color::rgba(0.0, 0.0, 0.0, 0.3);
+            *img = default();
         }
 
         if inventory.selected_slot == inventory_ui_slot.index {

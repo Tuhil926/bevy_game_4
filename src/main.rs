@@ -325,6 +325,7 @@ fn block_placer_breaker_system(
     mouse_world: ResMut<MousePosInWorld>,
     time: Res<Time>,
     mut block_update_queue: ResMut<BlockUpdateQueue>,
+    asset_server: Res<AssetServer>,
 ) {
     let (player_transform, mut player) = player_transforms.get_single_mut().unwrap();
     let player_translation = player_transform.translation;
@@ -357,6 +358,7 @@ fn block_placer_breaker_system(
                             pos,
                             block_type,
                             &mut block_update_queue,
+                            &asset_server,
                         );
                         dbg!(block_type);
                         create_block_update(pos, &mut block_update_queue);
@@ -620,11 +622,16 @@ fn update_processor_system(
     }
 }
 
-fn update_blocks(block_map: Res<Map>, mut blocks: Query<(&mut Sprite, &BlockEntity)>) {
-    for (mut sprite, block_entity) in &mut blocks {
+fn update_blocks(
+    block_map: Res<Map>,
+    mut blocks: Query<(&mut Sprite, &mut Handle<Image>, &BlockEntity)>,
+    asset_server: Res<AssetServer>,
+) {
+    for (mut sprite, mut img, block_entity) in &mut blocks {
         let pos = block_entity.pos;
         if let Some((_, block_type)) = block_map.blocks.get(&pos) {
             sprite.color = get_block_color(*block_type);
+            *img = get_block_texture(*block_type, &asset_server);
         }
     }
 }
