@@ -1,0 +1,5 @@
+add functions to create an instance of entities based on their string representation (vector of words) -> Done
+add functions to create the string representation of entities based on other stuff
+add functions to create an instance of blocks based on their string representation (vector of words) -> Done
+add functions to create string representation of any block based on their block type -> Done
+note: blocks in the inventory still do not have any data associated with them
