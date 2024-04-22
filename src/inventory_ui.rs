@@ -1,6 +1,9 @@
 use bevy::prelude::*;
 
-use crate::{get_block_color, get_block_texture, AppState, InventorySlot, PlayerInventory};
+use crate::{
+    get_block_color, get_block_texture, get_item_color, get_item_texture, AppState, InventorySlot,
+    PlayerInventory,
+};
 
 #[derive(Component)]
 pub struct InventoryUI;
@@ -90,8 +93,8 @@ fn update_inventory_ui(
 ) {
     for (mut color, mut style, mut img, &inventory_ui_slot) in &mut inventory_ui_slots {
         if let Some(Some(slot)) = inventory.slots.get(inventory_ui_slot.index) {
-            color.0 = get_block_color(slot.item_type);
-            *img = get_block_texture(slot.item_type, &asset_server).into();
+            color.0 = get_item_color(slot.item_type);
+            *img = get_item_texture(slot.item_type, &asset_server).into();
         } else {
             color.0 = Color::rgba(0.0, 0.0, 0.0, 0.3);
             *img = default();

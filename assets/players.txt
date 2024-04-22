@@ -1,6 +1,6 @@
-pos 21.708687 12.200587 0.39618137 -0.30848673 0 0
-slot stone 36
-slot wire 38
-slot repeater 5
-slot nothing 0
-slot wood 10
+pos 38.574566 13.711793 0.000000010842056 0.000000000000000000015578716 0 0
+slot stone 54
+slot wire 101
+slot repeater 124
+slot inverter 120
+slot wood 9

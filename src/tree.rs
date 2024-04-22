@@ -1,4 +1,4 @@
-use crate::{BlockType, Collectible, StaticCollisionCircle};
+use crate::{BlockType, Collectible, ItemType, StaticCollisionCircle};
 use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
 use rand::Rng;
 
@@ -23,7 +23,7 @@ pub fn spawn_tree(
         Collectible {
             pos: Vec2::new(pos.x, pos.y),
             gather_radius: 3.,
-            block_type: BlockType::Wood,
+            item_type: ItemType::Wood,
             uses: uses,
         },
         StaticCollisionCircle { radius: 1. },

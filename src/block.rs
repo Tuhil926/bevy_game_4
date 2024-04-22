@@ -11,6 +11,15 @@ pub enum BlockType {
     Inverter(i32, i32),
 }
 
+#[derive(PartialEq, Hash, Eq, Clone, Copy, Debug)]
+pub enum ItemType {
+    Wood,
+    Stone(i32),
+    Wire(i32),
+    Repeater(i32, i32),
+    Inverter(i32, i32),
+}
+
 #[derive(Component)]
 pub struct BlockEntity {
     pub pos: (i32, i32),
@@ -49,6 +58,16 @@ pub fn get_block_color(block_type: BlockType) -> Color {
     }
 }
 
+pub fn get_item_color(item_type: ItemType) -> Color {
+    match item_type {
+        ItemType::Wood => Color::rgb(0.4, 0.2, 0.),
+        ItemType::Stone(_) => Color::rgb(0.3, 0.3, 0.3),
+        ItemType::Wire(power) => Color::rgb(0.4 + 0.004 * power as f32, 0., 0.),
+        ItemType::Repeater(power, _) => default(),
+        ItemType::Inverter(power, _) => default(),
+    }
+}
+
 pub fn get_block_dir(block_type: BlockType) -> i32 {
     match block_type {
         BlockType::Repeater(_, dir) => dir,
@@ -67,6 +86,26 @@ pub fn get_block_texture(block_type: BlockType, asset_server: &Res<AssetServer>)
             }
         }
         BlockType::Repeater(power, dir) => {
+            if power == 0 {
+                asset_server.load("repeater_unpowered.png")
+            } else {
+                asset_server.load("repeater_powered.png")
+            }
+        }
+        _ => default(),
+    }
+}
+
+pub fn get_item_texture(item_type: ItemType, asset_server: &Res<AssetServer>) -> Handle<Image> {
+    match item_type {
+        ItemType::Inverter(power, dir) => {
+            if power == 0 {
+                asset_server.load("inverter_powered.png")
+            } else {
+                asset_server.load("inverter_unpowered.png")
+            }
+        }
+        ItemType::Repeater(power, dir) => {
             if power == 0 {
                 asset_server.load("repeater_unpowered.png")
             } else {
@@ -173,6 +212,65 @@ pub fn get_string_rep_from_block_type(block_type: Option<BlockType>) -> (String,
     }
 }
 
+pub fn get_item_type_from_string_rep(item_type: &str, data: &[&str]) -> Option<ItemType> {
+    dbg!(data);
+    match item_type {
+        "wood" => Some(ItemType::Wood),
+        "stone" => Some(ItemType::Stone(if data.len() > 0 {
+            data[0].parse::<i32>().unwrap()
+        } else {
+            0
+        })),
+        "wire" => Some(ItemType::Wire(if data.len() > 0 {
+            data[0].parse::<i32>().unwrap()
+        } else {
+            0
+        })),
+        "repeater" => Some(ItemType::Repeater(
+            if data.len() > 0 {
+                data[0].parse::<i32>().unwrap()
+            } else {
+                0
+            },
+            if data.len() > 1 {
+                data[1].parse::<i32>().unwrap()
+            } else {
+                2
+            },
+        )),
+        "inverter" => Some(ItemType::Inverter(
+            if data.len() > 0 {
+                data[0].parse::<i32>().unwrap()
+            } else {
+                1
+            },
+            if data.len() > 1 {
+                data[1].parse::<i32>().unwrap()
+            } else {
+                2
+            },
+        )),
+        _ => None,
+    }
+}
+
+pub fn get_string_rep_from_item_type(item_type: Option<ItemType>) -> (String, String) {
+    match item_type {
+        Some(block) => match block {
+            ItemType::Wood => (String::from("wood"), String::new()),
+            ItemType::Stone(number) => (String::from("stone"), format!("{}", number)),
+            ItemType::Wire(power) => (String::from("wire"), format!("{}", power)),
+            ItemType::Repeater(power, dir) => {
+                (String::from("repeater"), format!("{} {}", power, dir))
+            }
+            ItemType::Inverter(power, dir) => {
+                (String::from("inverter"), format!("{} {}", power, dir))
+            }
+        },
+        None => (String::from("nothing"), String::new()),
+    }
+}
+
 pub fn get_block_rep_from_string_rep_and_pos(
     string_rep: (String, String),
     block_pos: (i32, i32),
@@ -182,22 +280,22 @@ pub fn get_block_rep_from_string_rep_and_pos(
         string_rep.0, block_pos.0, block_pos.1, string_rep.1
     )
 }
-pub fn remove_block_type_data_for_inventory(block_type: BlockType) -> BlockType {
+pub fn remove_block_type_data_for_inventory(block_type: BlockType) -> ItemType {
     match block_type {
-        BlockType::Stone(_) => BlockType::Stone(0),
-        BlockType::Wire(_) => BlockType::Wire(0),
-        BlockType::Repeater(_, _) => BlockType::Repeater(0, 2),
-        BlockType::Inverter(_, _) => BlockType::Inverter(1, 2),
-        _ => block_type,
+        BlockType::Stone(_) => ItemType::Stone(0),
+        BlockType::Wire(_) => ItemType::Wire(0),
+        BlockType::Repeater(_, _) => ItemType::Repeater(0, 2),
+        BlockType::Inverter(_, _) => ItemType::Inverter(1, 2),
+        BlockType::Wood => ItemType::Wood,
     }
 }
 
-pub fn get_block_type_after_popped_from_inventory(block_type: BlockType, dir: i32) -> BlockType {
-    match block_type {
-        BlockType::Repeater(power, _) => BlockType::Repeater(power, (dir + 2) % 4),
-        BlockType::Inverter(power, _) => BlockType::Inverter(power, (dir + 2) % 4),
-        BlockType::Stone(a) => BlockType::Stone(a),
-        BlockType::Wire(power) => BlockType::Wire(power),
-        BlockType::Wood => BlockType::Wood,
+pub fn get_block_type_after_popped_from_inventory(item_type: ItemType, dir: i32) -> BlockType {
+    match item_type {
+        ItemType::Repeater(power, _) => BlockType::Repeater(power, (dir + 2) % 4),
+        ItemType::Inverter(power, _) => BlockType::Inverter(power, (dir + 2) % 4),
+        ItemType::Stone(a) => BlockType::Stone(a),
+        ItemType::Wire(power) => BlockType::Wire(power),
+        ItemType::Wood => BlockType::Wood,
     }
 }

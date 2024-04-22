@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use bevy::prelude::*;
 
-use crate::{BlockType, PhysicsBody, PLAYER_ACCELERATION};
+use crate::{BlockType, ItemType, PhysicsBody, PLAYER_ACCELERATION};
 
 #[derive(Component)]
 pub struct Player {
@@ -13,13 +13,13 @@ pub struct Player {
 
 #[derive(Clone, Copy)]
 pub struct InventorySlot {
-    pub item_type: BlockType,
+    pub item_type: ItemType,
     pub count: usize,
 }
 
 #[derive(Resource)]
 pub struct PlayerInventory {
-    pub blocks: HashMap<BlockType, usize>,
+    pub items: HashMap<ItemType, usize>,
     pub selected_slot: usize,
     pub slots: Vec<Option<InventorySlot>>,
 }

@@ -49,7 +49,7 @@ pub struct StaticCollisionCircle {
 pub struct Collectible {
     pos: Vec2,
     gather_radius: f32,
-    block_type: BlockType,
+    item_type: ItemType,
     uses: usize,
 }
 
@@ -86,7 +86,7 @@ fn main() {
             blocks: HashMap::new(),
         })
         .insert_resource(PlayerInventory {
-            blocks: HashMap::new(),
+            items: HashMap::new(),
             selected_slot: 0,
             slots: vec![],
         })
@@ -110,6 +110,7 @@ fn main() {
                 update_collectibles,
                 change_player_selected_slot,
                 update_processor_system,
+                // update_processor_system.run_if(on_timer(Duration::from_millis(50))),
                 update_blocks,
                 unload_far_collectibles.run_if(on_timer(Duration::from_millis(500))),
                 // unload_far_trees.run_if(on_timer(Duration::from_millis(500))),
@@ -198,16 +199,16 @@ fn calculate_mouse_pos_in_world(
 
 fn insert_block_to_inventory(
     inventory: &mut ResMut<PlayerInventory>,
-    block_type: BlockType,
+    item_type: ItemType,
     number: usize,
 ) {
     // dbg!(block_type);
-    let block_type = remove_block_type_data_for_inventory(block_type);
+    // let item_type = remove_block_type_data_for_inventory(item_type);
     // dbg!(block_type);
 
-    let count = *(inventory.blocks.get(&block_type).unwrap_or(&0));
+    let count = *(inventory.items.get(&item_type).unwrap_or(&0));
     dbg!(count);
-    inventory.blocks.insert(block_type.clone(), count + number);
+    inventory.items.insert(item_type.clone(), count + number);
 
     let mut empty_slot = inventory.slots.len();
 
@@ -215,9 +216,9 @@ fn insert_block_to_inventory(
         match &inventory.slots[i] {
             Some(slot) => {
                 // dbg!(slot.item_type);
-                if slot.item_type == block_type {
+                if slot.item_type == item_type {
                     inventory.slots[i] = Some(InventorySlot {
-                        item_type: block_type,
+                        item_type,
                         count: slot.count + number,
                     });
 
@@ -236,13 +237,13 @@ fn insert_block_to_inventory(
     }
     if empty_slot == inventory.slots.len() {
         inventory.slots.push(Some(InventorySlot {
-            item_type: block_type,
+            item_type,
             count: number,
         }));
         dbg!("lmo3");
     } else {
         inventory.slots[empty_slot] = Some(InventorySlot {
-            item_type: block_type,
+            item_type,
             count: number,
         });
         dbg!("lmoa4");
@@ -258,23 +259,21 @@ fn pop_block_from_current_slot(
         return None;
     }
     if let Some(slot) = &inventory.slots[selected_slot].clone() {
-        let &count_in_inventory = inventory.blocks.get(&slot.item_type).unwrap_or(&0);
+        let &count_in_inventory = inventory.items.get(&slot.item_type).unwrap_or(&0);
         let count_in_slot = slot.count;
-        let block_type = slot.item_type.clone();
-        let block_type2 = get_block_type_after_popped_from_inventory(block_type, dir);
+        let item_type = slot.item_type.clone();
+        let block_type = get_block_type_after_popped_from_inventory(item_type, dir);
         if count_in_inventory > 1 && count_in_slot > 1 {
             inventory.slots[selected_slot] = Some(InventorySlot {
-                item_type: block_type.clone(),
+                item_type: item_type.clone(),
                 count: count_in_inventory - 1,
             });
-            inventory
-                .blocks
-                .insert(block_type.clone(), count_in_slot - 1);
-            return Some(block_type2);
+            inventory.items.insert(item_type.clone(), count_in_slot - 1);
+            return Some(block_type);
         } else {
             inventory.slots[selected_slot] = None;
-            inventory.blocks.remove(&block_type);
-            return Some(block_type2);
+            inventory.items.remove(&item_type);
+            return Some(block_type);
         }
     }
     None
@@ -372,7 +371,11 @@ fn block_placer_breaker_system(
             if player.break_cooldown >= 0.5 {
                 player.break_cooldown = 0.;
                 if let Some(block_type) = despawn_block(commands, block_map, pos) {
-                    insert_block_to_inventory(&mut inventory, block_type, 1);
+                    insert_block_to_inventory(
+                        &mut inventory,
+                        remove_block_type_data_for_inventory(block_type),
+                        1,
+                    );
                     create_block_update(pos, &mut block_update_queue);
                 }
             } else if let Some(entry) = block_map.blocks.get(&pos) {
@@ -658,6 +661,7 @@ fn update_physics_body_movement(
         let vel = body.vel;
 
         body.vel -= vel * (vel.distance(Vec2::ZERO) + 1.) * DRAG * time.delta_seconds() / 100.;
+        transform.translation.z = 0.05;
     }
 }
 
@@ -830,7 +834,7 @@ fn player_gather_collectible(
                 if collectible_direction.distance(Vec2::ZERO) < collectible.gather_radius
                     && collectible_direction.normalize().dot(player_direction) > 0.1
                 {
-                    insert_block_to_inventory(&mut inventory, collectible.block_type.clone(), 1);
+                    insert_block_to_inventory(&mut inventory, collectible.item_type.clone(), 1);
                     collectible.uses -= 1;
                     if collectible.uses == 0 {
                         commands.entity(entity).despawn();

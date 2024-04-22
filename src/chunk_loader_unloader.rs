@@ -16,10 +16,11 @@ pub struct ChunkBackground {}
 
 use crate::{
     generate_rocks, generate_trees, get_block_rep_from_string_rep_and_pos,
-    get_block_type_from_string_rep, get_string_rep_from_block_type, insert_block_to_inventory,
-    make_string_rep_of_rock, make_string_rep_of_tree, spawn_block, spawn_rock_from_string_rep,
-    spawn_tree_from_string_rep, BlockEntity, BlockUpdateQueue, Collectible, CollisionBox, Map,
-    PhysicsBody, Player, PlayerInventory, Rock, Tree,
+    get_block_type_from_string_rep, get_item_type_from_string_rep, get_string_rep_from_block_type,
+    get_string_rep_from_item_type, insert_block_to_inventory, make_string_rep_of_rock,
+    make_string_rep_of_tree, spawn_block, spawn_rock_from_string_rep, spawn_tree_from_string_rep,
+    BlockEntity, BlockUpdateQueue, Collectible, CollisionBox, Map, PhysicsBody, Player,
+    PlayerInventory, Rock, Tree,
 };
 
 const RENDER_RADIUS: i32 = 2;
@@ -57,7 +58,7 @@ pub fn save_players(
         }
 
         players_string.push_str("slot ");
-        players_string.push_str(get_string_rep_from_block_type(block_type).0.as_str());
+        players_string.push_str(get_string_rep_from_item_type(block_type).0.as_str());
         players_string.push(' ');
         players_string.push_str(count.to_string().as_str());
         players_string.push('\n');
@@ -89,7 +90,7 @@ pub fn spawn_players(
                         MaterialMesh2dBundle {
                             mesh: meshes.add(shape::Circle::new(0.5).into()).into(),
                             material: materials.add(ColorMaterial::from(Color::rgb(0.9, 0.6, 0.3))),
-                            transform: Transform::from_xyz(x, y, 0.1),
+                            transform: Transform::from_xyz(x, y, 0.05),
                             ..default()
                         },
                         Player {
@@ -111,9 +112,9 @@ pub fn spawn_players(
                     // let block_id = parts[1].parse::<usize>().unwrap();
                     let count = parts[2].parse::<usize>().unwrap();
 
-                    match get_block_type_from_string_rep(parts[1], &parts[3..]) {
-                        Some(block_type) => {
-                            insert_block_to_inventory(&mut inventory, block_type, count);
+                    match get_item_type_from_string_rep(parts[1], &parts[3..]) {
+                        Some(item_type) => {
+                            insert_block_to_inventory(&mut inventory, item_type, count);
                         }
                         None => {
                             inventory.slots.push(None);
@@ -132,7 +133,7 @@ pub fn despawn_players(
     players: Query<Entity, With<Player>>,
     mut inventory: ResMut<PlayerInventory>,
 ) {
-    inventory.blocks.clear();
+    inventory.items.clear();
     inventory.slots.clear();
     inventory.selected_slot = 0;
     for player in &players {

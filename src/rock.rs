@@ -1,7 +1,7 @@
 use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
 use rand::Rng;
 
-use crate::{BlockType, Collectible, StaticCollisionCircle};
+use crate::{BlockType, Collectible, ItemType, StaticCollisionCircle};
 
 #[derive(Component)]
 pub struct Rock {}
@@ -37,7 +37,7 @@ pub fn spawn_rock(
         Collectible {
             pos: Vec2::new(pos.x, pos.y),
             gather_radius: 3.,
-            block_type: BlockType::Stone(0),
+            item_type: ItemType::Stone(0),
             uses: uses,
         },
         StaticCollisionCircle { radius: 1. },
@@ -65,7 +65,7 @@ pub fn spawn_rock_from_string_rep(
     let x = parts[1].parse::<f32>().unwrap();
     let y = parts[2].parse::<f32>().unwrap();
     let uses = parts[3].parse::<usize>().unwrap();
-    spawn_rock(commands, meshes, materials, Vec3::new(x, y, 0.06), uses);
+    spawn_rock(commands, meshes, materials, Vec3::new(x, y, 0.07), uses);
 }
 
 pub fn generate_rocks(
