@@ -190,7 +190,8 @@ pub fn load_chunk(
     commands.spawn((
         SpriteBundle {
             sprite: Sprite {
-                color: Color::rgb(0.5, 0.7, 0.3),
+                // color: Color::rgb(0.5, 0.7, 0.3),
+                color: Color::rgb(0.2, 0.3, 0.1),
                 custom_size: Some(Vec2::new(16., 16.)),
                 ..default()
             },

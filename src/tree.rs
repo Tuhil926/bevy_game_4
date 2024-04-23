@@ -12,6 +12,8 @@ pub fn spawn_tree(
     pos: Vec3,
     uses: usize,
 ) {
+    let normal_material = materials.add(ColorMaterial::from(Color::rgb(0.4, 1.0, 0.1)));
+    let punched_material = materials.add(ColorMaterial::from(Color::rgb(0.8, 1.0, 0.5)));
     commands.spawn((
         MaterialMesh2dBundle {
             mesh: meshes.add(shape::Circle::new(1.).into()).into(),
@@ -25,6 +27,8 @@ pub fn spawn_tree(
             gather_radius: 3.,
             item_type: ItemType::Wood,
             uses: uses,
+            normal_material: normal_material,
+            punched_material: punched_material,
         },
         StaticCollisionCircle { radius: 1. },
     ));

@@ -1,6 +1,6 @@
 use bevy::{
-    prelude::*, render::camera::ScalingMode, time::common_conditions::on_timer,
-    window::PrimaryWindow,
+    core_pipeline::bloom::BloomSettings, prelude::*, render::camera::ScalingMode,
+    time::common_conditions::on_timer, window::PrimaryWindow,
 };
 use std::{
     collections::{HashMap, HashSet, VecDeque},
@@ -28,6 +28,13 @@ pub enum AppState {
     GameOver,
 }
 
+#[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
+pub enum SimulationState {
+    #[default]
+    Running,
+    Paused,
+}
+
 #[derive(Component)]
 pub struct PhysicsBody {
     vel: Vec2,
@@ -51,6 +58,8 @@ pub struct Collectible {
     gather_radius: f32,
     item_type: ItemType,
     uses: usize,
+    normal_material: Handle<ColorMaterial>,
+    punched_material: Handle<ColorMaterial>,
 }
 
 const PLAYER_ACCELERATION: f32 = 80.;
@@ -77,6 +86,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugins(InventoryUI)
         .add_state::<AppState>()
+        .add_state::<SimulationState>()
         .insert_resource(ClearColor(Color::rgb(0.3, 0.5, 0.15)))
         .insert_resource(ChunksToSave {
             chunks: HashMap::new(),
@@ -119,12 +129,17 @@ fn main() {
                 unload_far_chunk_backgrounds.run_if(on_timer(Duration::from_millis(500))),
                 load_close_chunks.run_if(on_timer(Duration::from_millis(100))),
             )
-                .run_if(in_state(AppState::Game)),
+                .run_if(in_state(AppState::Game))
+                .run_if(in_state(SimulationState::Running)),
         )
         .add_systems(OnEnter(AppState::Game), spawn_players)
         .add_systems(
             Update,
-            (transition_to_game_state, transition_to_main_menu_state),
+            (
+                transition_to_game_state,
+                transition_to_main_menu_state,
+                game_pauser_system.run_if(in_state(AppState::Game)),
+            ),
         )
         .add_systems(
             OnExit(AppState::Game),
@@ -168,10 +183,36 @@ pub fn transition_to_main_menu_state(
     }
 }
 
+pub fn game_pauser_system(
+    mut commands: Commands,
+    keyboard_input: Res<Input<KeyCode>>,
+    sim_state: Res<State<SimulationState>>,
+    mut bloom: Query<&mut BloomSettings>,
+) {
+    let mut bloom = bloom.get_single_mut().unwrap();
+    if keyboard_input.just_pressed(KeyCode::Escape) {
+        if *sim_state.get() == SimulationState::Running {
+            commands.insert_resource(NextState(Some(SimulationState::Paused)));
+            *bloom = BloomSettings::SCREEN_BLUR;
+            println!("Paused");
+        } else {
+            commands.insert_resource(NextState(Some(SimulationState::Running)));
+            *bloom = BloomSettings::NATURAL;
+            println!("resumed");
+        }
+    }
+}
+
 fn setup(mut commands: Commands) {
-    let mut camera_bundle = Camera2dBundle::default();
+    let mut camera_bundle = Camera2dBundle {
+        camera: Camera {
+            hdr: true,
+            ..default()
+        },
+        ..default()
+    };
     camera_bundle.projection.scaling_mode = ScalingMode::FixedVertical(10.);
-    commands.spawn(camera_bundle);
+    commands.spawn((camera_bundle, BloomSettings::NATURAL));
 }
 
 fn calculate_mouse_pos_in_world(
@@ -391,6 +432,7 @@ fn block_placer_breaker_system(
     }
 }
 
+// updates an entire connected component of wire
 fn update_wire_line(
     init_pos: (i32, i32),
     block_map: &mut ResMut<Map>,
@@ -467,6 +509,7 @@ fn update_wire_line(
     }
 }
 
+// system that processes block updates, not updating the processor
 fn update_processor_system(
     mut block_update_queue: ResMut<BlockUpdateQueue>,
     mut block_map: ResMut<Map>,
@@ -545,7 +588,16 @@ fn update_processor_system(
                                     new_power = 1.min(power);
                                 }
                             }
-                            // BlockType::Repeater(power, other_dir) => new_power = 128.min(128 * power),
+                            BlockType::Repeater(power, other_dir) => {
+                                if (other_dir + 2) % 4 != inc_dir && dir == inc_dir {
+                                    new_power = power;
+                                }
+                            }
+                            BlockType::Inverter(power, other_dir) => {
+                                if (other_dir + 2) % 4 != inc_dir && dir == inc_dir {
+                                    new_power = power;
+                                }
+                            }
                             _ => {}
                         };
 
@@ -585,8 +637,13 @@ fn update_processor_system(
                                     new_power = 1 - 1.min(power);
                                 }
                             }
-                            BlockType::Repeater(power, dir2) => {
-                                if inc_dir == dir && dir == dir2 {
+                            BlockType::Repeater(power, other_dir) => {
+                                if (other_dir + 2) % 4 != inc_dir && dir == inc_dir {
+                                    new_power = 1 - power;
+                                }
+                            }
+                            BlockType::Inverter(power, other_dir) => {
+                                if (other_dir + 2) % 4 != inc_dir && dir == inc_dir {
                                     new_power = 1 - power;
                                 }
                             }
@@ -625,6 +682,7 @@ fn update_processor_system(
     }
 }
 
+// update the texture and color of blocks based on their state
 fn update_blocks(
     block_map: Res<Map>,
     mut blocks: Query<(&mut Sprite, &mut Handle<Image>, &BlockEntity)>,
@@ -801,11 +859,16 @@ fn entity_collide_static_circle(
     // println!("lol");
 }
 
-fn update_collectibles(mut collectibles: Query<(&mut Transform, &Collectible)>) {
-    for (mut transform, collectible) in &mut collectibles {
+fn update_collectibles(
+    mut collectibles: Query<(&mut Transform, &Collectible, &mut Handle<ColorMaterial>)>,
+) {
+    for (mut transform, collectible, mut mat) in &mut collectibles {
         if transform.translation.truncate().distance(collectible.pos) > 0.1 {
             let prev = transform.translation;
             transform.translation -= (prev - collectible.pos.extend(0.)) / 5.;
+            *mat = collectible.punched_material.clone();
+        } else {
+            *mat = collectible.normal_material.clone();
         }
     }
 }

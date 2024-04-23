@@ -1,7 +1,7 @@
 use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
 use rand::Rng;
 
-use crate::{BlockType, Collectible, ItemType, StaticCollisionCircle};
+use crate::{Collectible, ItemType, StaticCollisionCircle};
 
 #[derive(Component)]
 pub struct Rock {}
@@ -15,6 +15,8 @@ pub fn spawn_rock(
     uses: usize,
 ) {
     // let mut rng = rand::thread_rng();
+    let normal_material = materials.add(ColorMaterial::from(Color::rgb(0.4, 0.4, 0.4)));
+    let punched_material = materials.add(ColorMaterial::from(Color::rgb(0.6, 0.6, 0.6)));
     commands.spawn((
         MaterialMesh2dBundle {
             mesh: meshes.add(shape::Circle::new(1.).into()).into(),
@@ -39,6 +41,8 @@ pub fn spawn_rock(
             gather_radius: 3.,
             item_type: ItemType::Stone(0),
             uses: uses,
+            normal_material: normal_material,
+            punched_material: punched_material,
         },
         StaticCollisionCircle { radius: 1. },
     ));
