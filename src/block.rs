@@ -154,7 +154,7 @@ pub fn spawn_block(
 }
 
 pub fn get_block_type_from_string_rep(block_type: &str, data: &[&str]) -> Option<BlockType> {
-    dbg!(data);
+    // dbg!(data);
     match block_type {
         "wood" => Some(BlockType::Wood),
         "stone" => Some(BlockType::Stone(if data.len() > 0 {
@@ -213,7 +213,7 @@ pub fn get_string_rep_from_block_type(block_type: Option<BlockType>) -> (String,
 }
 
 pub fn get_item_type_from_string_rep(item_type: &str, data: &[&str]) -> Option<ItemType> {
-    dbg!(data);
+    // dbg!(data);
     match item_type {
         "wood" => Some(ItemType::Wood),
         "stone" => Some(ItemType::Stone(if data.len() > 0 {

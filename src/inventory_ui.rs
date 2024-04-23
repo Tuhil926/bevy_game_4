@@ -1,9 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{
-    get_block_color, get_block_texture, get_item_color, get_item_texture, AppState, InventorySlot,
-    PlayerInventory,
-};
+use crate::{get_item_color, get_item_texture, AppState, InventorySlot, PlayerInventory};
 
 #[derive(Component)]
 pub struct InventoryUI;

@@ -1,0 +1,28 @@
+rock 23.267658 41.373062 10
+rock 29.309067 40.190693 10
+rock 31.632969 40.082344 10
+block wire 18 35 0
+block wire 17 36 0
+block wire 17 34 0
+block wire 18 37 0
+block wire 22 35 0
+block wire 22 34 0
+block wire 22 37 0
+block wire 25 37 0
+block wire 24 36 0
+block wire 25 35 0
+block wire 24 34 0
+block wire 29 36 0
+block wire 28 36 0
+block wire 28 35 0
+block wire 28 34 0
+block wire 29 34 0
+block wire 30 35 0
+block wire 31 34 0
+block wire 30 36 0
+block wire 29 32 0
+block wire 27 32 0
+block wire 26 32 0
+block wire 20 32 0
+block wire 21 32 0
+block wire 19 32 0

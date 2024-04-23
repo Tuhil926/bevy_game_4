@@ -82,6 +82,24 @@ struct BlockUpdateQueue {
 }
 
 fn main() {
+    println!();
+    println!();
+    println!("Hello! This is a survival, infinite world game, kind of like minecraft.");
+    println!("You can click g to start the game, and m to come back to the (currently non-existent) menu.");
+    println!("You can use wasd to move around, left click near trees and rocks to gather resources and left click on blocks to break them.");
+    println!("You can use the numbers to select a particular inventory slot, and right click to place blocks.");
+    println!("You can click esc to pause and unpause the game.");
+    println!("There are currently not that many blocks, but I'll explain the ones that are in the game that you might have in your inventory:");
+    println!("Wood and stone are the brown and grey ones. They don't do anything, except that stone can power redstone components");
+    println!("wire just carries a signal from adjacent wires or repeaters or inverters or stone. Has a max power of 128, power decreases by 1 as you go along blocks");
+    println!(
+        "Repeaters will give off a power level of 128 if they receive power behind the arrow."
+    );
+    println!("Inverter will give off a power level of 128 only of there is no power behind it.");
+    println!("Inverter and repeaters are directional, and you can place it in a particular direction by facing in that direction while placing it.");
+    println!("Anyways, that's all ive made so far, I'll add more thins soon(ish). Enjoy!");
+    println!();
+    println!();
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(InventoryUI)
@@ -248,7 +266,7 @@ fn insert_block_to_inventory(
     // dbg!(block_type);
 
     let count = *(inventory.items.get(&item_type).unwrap_or(&0));
-    dbg!(count);
+    // dbg!(count);
     inventory.items.insert(item_type.clone(), count + number);
 
     let mut empty_slot = inventory.slots.len();
@@ -263,7 +281,7 @@ fn insert_block_to_inventory(
                         count: slot.count + number,
                     });
 
-                    dbg!("lmoa");
+                    // dbg!("lmoa");
 
                     return;
                 }
@@ -271,7 +289,7 @@ fn insert_block_to_inventory(
             None => {
                 if empty_slot == inventory.slots.len() {
                     empty_slot = i;
-                    dbg!("lmoa2");
+                    // dbg!("lmoa2");
                 }
             }
         }
@@ -281,13 +299,13 @@ fn insert_block_to_inventory(
             item_type,
             count: number,
         }));
-        dbg!("lmo3");
+        // dbg!("lmo3");
     } else {
         inventory.slots[empty_slot] = Some(InventorySlot {
             item_type,
             count: number,
         });
-        dbg!("lmoa4");
+        // dbg!("lmoa4");
     }
 }
 
@@ -400,7 +418,7 @@ fn block_placer_breaker_system(
                             &mut block_update_queue,
                             &asset_server,
                         );
-                        dbg!(block_type);
+                        // dbg!(block_type);
                         create_block_update(pos, &mut block_update_queue);
                     }
                 }
@@ -852,7 +870,7 @@ fn entity_collide_static_circle(
                     .normalize()
                     * 400.;
 
-                println!("sdfsdf");
+                // println!("sdfsdf");
             }
         }
     }

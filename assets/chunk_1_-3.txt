@@ -1,0 +1,11 @@
+rock 30.056458 -46.99574 10
+rock 17.82371 -40.56778 10
+rock 18.234718 -41.569996 10
+block stone 28 -33 0
+block wood 28 -37 
+block wood 27 -36 
+block stone 29 -34 0
+block stone 30 -35 0
+block wood 26 -35 
+block wood 24 -33 
+block wood 25 -34 

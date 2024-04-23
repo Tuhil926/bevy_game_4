@@ -25,6 +25,7 @@ use crate::{
 
 const RENDER_RADIUS: i32 = 2;
 
+// currently, there should only be one player
 pub fn save_players(
     players: Query<(&PhysicsBody, &Transform), With<Player>>,
     inventory: Res<PlayerInventory>,
@@ -141,6 +142,8 @@ pub fn despawn_players(
     }
 }
 
+// a system that checks the player position and loads chunks in a square of
+// side 2*RENDER_RADIUS + 1 centered around the player
 pub fn load_close_chunks(
     mut commands: Commands,
     mut chunks_to_save: ResMut<ChunksToSave>,
@@ -173,6 +176,10 @@ pub fn load_close_chunks(
     }
 }
 
+// loads a chunk. if already loaded, skips.
+// if the chunk was previously loaded and unloaded, the data will be presend in
+// the ChunksToSave resource, so it loads from there. Otherwise, if a chunk file
+// exists, it loads that. Else, it generates new trees and rocks for this chunk
 pub fn load_chunk(
     commands: &mut Commands,
     chunks_to_save: &mut ResMut<ChunksToSave>,
@@ -214,7 +221,7 @@ pub fn load_chunk(
         // generate the chunk
         generate_trees(commands, meshes, materials, pos);
         generate_rocks(commands, meshes, materials, asset_server, pos);
-        println!("wtf");
+        // println!("wtf");
         return;
     }
     let lines = entities.split('\n').collect::<Vec<&str>>();
@@ -244,6 +251,7 @@ pub fn load_chunk(
     }
 }
 
+// only unloads the background square of a far chunks.
 pub fn unload_far_chunk_backgrounds(
     mut commands: Commands,
     backgrounds: Query<(&Transform, Entity), With<ChunkBackground>>,
@@ -271,6 +279,7 @@ pub fn unload_far_chunk_backgrounds(
     }
 }
 
+// clears only chunks_loaded, so data is not lost, but can cause inconsistancy of some entites are still loaded
 pub fn unload_all_chunk_backgrounds_and_clear_chunks_to_save(
     mut commands: Commands,
     backgrounds: Query<Entity, With<ChunkBackground>>,
@@ -282,10 +291,11 @@ pub fn unload_all_chunk_backgrounds_and_clear_chunks_to_save(
     chunks_to_save.chunks_loaded.clear();
 }
 
+// saves the chunks in ChunksToSave to their respective files and clears it. Doesn't affect loaded chunks
 pub fn save_chunks_to_file(mut chunks_to_save: ResMut<ChunksToSave>) {
     for (pos, entities) in chunks_to_save.chunks.iter() {
         if let Ok(_) = fs::write(format!("./assets/chunk_{}_{}.txt", pos.0, pos.1), entities) {
-            println!("saved chunk successfully");
+            println!("saved chunk {} {} successfully", pos.0, pos.1);
         } else {
             println!("error saving chunks");
         }
@@ -293,6 +303,7 @@ pub fn save_chunks_to_file(mut chunks_to_save: ResMut<ChunksToSave>) {
     chunks_to_save.chunks.clear();
 }
 
+// the unloaded blocks will be added to ChunksToSave
 pub fn unload_far_blocks(
     mut commands: Commands,
     blocks: Query<(&Transform, Entity), With<BlockEntity>>,
@@ -330,6 +341,7 @@ pub fn unload_far_blocks(
     }
 }
 
+// the unloaded blocks will be added to ChunksToSave
 pub fn unload_all_blocks(
     mut commands: Commands,
     blocks: Query<(&Transform, Entity), With<BlockEntity>>,
@@ -359,6 +371,7 @@ pub fn unload_all_blocks(
     block_map.blocks.clear();
 }
 
+// the unloaded collectibles will be added to ChunksToSave
 pub fn unload_far_collectibles(
     mut commands: Commands,
     rocks: Query<(&Collectible, Entity), With<Rock>>,
@@ -404,6 +417,7 @@ pub fn unload_far_collectibles(
     }
 }
 
+// the unloaded collectibles will be added to ChunksToSave
 pub fn unload_all_collectibles(
     rocks: Query<(&Collectible, Entity), With<Rock>>,
     trees: Query<(&Collectible, Entity), With<Tree>>,

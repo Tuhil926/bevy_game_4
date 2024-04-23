@@ -1,0 +1,29 @@
+rock 7.097439 -1.8897066 7
+tree 5.320693 -4.0857744 8
+tree 8.584382 -0.7856226 9
+block wire 9 -8 0
+block stone 14 -4 0
+block wire 9 -10 0
+block wire 10 -10 0
+block wire 11 -10 0
+block wire 12 -10 0
+block wire 14 -10 0
+block wire 13 -10 0
+block wire 15 -10 0
+block wood 7 -16 
+block stone 8 -13 0
+block stone 7 -12 0
+block stone 10 -15 0
+block stone 11 -16 0
+block wood 5 -14 
+block wood 6 -15 
+block stone 9 -14 0
+block wire 0 -8 0
+block wire 1 -8 0
+block wire 2 -8 0
+block wire 3 -8 0
+block wire 4 -8 0
+block wire 5 -8 0
+block wire 6 -8 0
+block wire 7 -8 0
+block wire 8 -8 0

@@ -1,4 +1,4 @@
-use crate::{BlockType, Collectible, ItemType, StaticCollisionCircle};
+use crate::{Collectible, ItemType, StaticCollisionCircle};
 use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
 use rand::Rng;
 
@@ -32,7 +32,7 @@ pub fn spawn_tree(
         },
         StaticCollisionCircle { radius: 1. },
     ));
-    println!("spawned a tree at {}, {}", pos.x, pos.y);
+    // println!("spawned a tree at {}, {}", pos.x, pos.y);
 }
 
 pub fn make_string_rep_of_tree(collectible: &Collectible) -> String {

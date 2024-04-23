@@ -1,0 +1,24 @@
+tree 26.048363 -28.798634 10
+tree 23.181763 -25.493225 10
+block wood 18 -23 
+block wood 21 -26 
+block wood 20 -29 
+block wood 27 -32 
+block wood 23 -28 
+block wood 16 -25 
+block stone 21 -25 0
+block wood 26 -31 
+block stone 20 -25 0
+block wood 23 -32 
+block wood 18 -27 
+block wood 19 -24 
+block wood 21 -30 
+block wood 17 -26 
+block wood 25 -30 
+block wood 24 -29 
+block stone 24 -27 0
+block wood 22 -31 
+block stone 16 -21 0
+block stone 17 -22 0
+block wood 19 -28 
+block wood 22 -27 

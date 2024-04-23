@@ -1,0 +1,12 @@
+rock 20.042818 -12.244382 10
+rock 29.859888 -11.125776 10
+rock 26.751966 -4.1756363 10
+tree 16.65861 -0.5314903 10
+tree 23.864176 -2.9569025 10
+block wire 20 -10 0
+block wire 19 -10 0
+block wire 22 -10 0
+block wire 21 -10 0
+block wire 16 -10 0
+block wire 17 -10 0
+block wire 18 -10 0
