@@ -1,65 +1,67 @@
-rock 16.632385 2.7101803 10
 rock 27.274506 1.7502289 10
-tree 16.96859 5.6391 10
+rock 16.632385 2.7101803 10
 tree 19.23321 0.7701349 10
-block wire 30 7 0
-block wire 29 7 0
+tree 16.96859 5.6391 10
+block stone 22 3 0
+block stone 23 3 0
+block wire 30 7 113
+block wire 29 7 112
 block wire 17 9 127
 block wire 16 9 126
 block wire 17 11 128
 block repeater 17 10 1 2
 block repeater 16 11 1 1
 block wire 22 12 0
-block wire 30 10 126
-block wire 27 13 120
+block wire 30 10 0
+block wire 27 13 0
 block wire 18 15 128
 block wire 21 12 0
 block wire 20 12 0
 block wire 20 13 0
 block wire 20 14 0
 block wire 20 15 0
-block wire 22 10 0
-block wire 22 8 0
-block wire 22 9 0
-block wire 24 8 0
-block wire 23 8 0
-block wire 25 8 0
-block wire 23 15 114
-block wire 23 14 115
-block wire 24 14 116
+block wire 22 10 102
+block wire 22 8 104
+block wire 22 9 103
+block wire 24 8 106
+block wire 23 8 105
+block wire 25 8 107
+block wire 23 15 0
+block wire 23 14 0
+block wire 24 14 0
 block inverter 18 14 1 3
 block wire 17 14 0
 block wire 16 14 0
 block inverter 19 15 0 3
 block inverter 23 12 1 3
-block inverter 23 10 1 3
+block inverter 23 10 0 3
 block wire 23 11 128
 block wire 18 9 128
-block wire 29 10 127
-block inverter 28 15 0 3
-block wire 25 14 117
-block inverter 28 9 1 3
-block wire 31 7 0
+block wire 29 10 0
+block inverter 28 15 1 3
+block wire 25 14 0
+block inverter 28 9 0 3
+block wire 31 7 114
 block wire 26 11 125
-block wire 26 13 119
-block wire 26 14 118
-block wire 26 7 0
+block wire 26 13 0
+block wire 26 14 0
+block wire 26 7 109
 block wood 17 7 
-block wire 30 12 124
+block wire 30 12 0
 block stone 19 9 0
-block wire 28 7 0
-block wire 26 9 0
-block wire 26 8 0
-block wire 27 15 116
-block wire 28 10 128
+block wire 28 7 111
+block wire 26 9 107
+block wire 26 8 108
+block wire 27 15 0
+block wire 28 10 0
 block wire 27 11 124
 block inverter 28 11 0 3
-block wire 28 13 121
-block wire 29 13 122
-block wire 30 13 123
-block wire 30 11 125
-block wire 26 15 117
-block wire 27 7 0
-block wire 27 9 0
+block wire 28 13 0
+block wire 29 13 0
+block wire 30 13 0
+block wire 30 11 0
+block wire 26 15 0
+block wire 27 7 110
+block wire 27 9 106
 block wire 24 11 127
 block wire 25 11 126

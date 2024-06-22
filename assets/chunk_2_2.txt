@@ -1,6 +1,6 @@
 rock 40.00541 35.767918 10
 tree 33.808907 46.92252 10
 tree 36.044163 43.07605 10
-block wire 32 32 0
 block wire 34 32 0
 block wire 35 32 0
+block wire 32 32 0

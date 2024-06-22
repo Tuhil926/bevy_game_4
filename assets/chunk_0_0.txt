@@ -1,16 +1,16 @@
 rock 6.7867355 4.0826263 10
-tree 1.4539919 7.6834173 10
 tree 12.877988 7.963805 10
 tree 12.460706 9.593929 10
-block wire 14 12 0
-block repeater 14 10 0 0
-block wire 14 9 0
-block repeater 15 9 0 3
-block wire 14 13 0
-block wire 14 11 0
-block inverter 15 11 0 1
-block wire 15 14 0
-block wire 14 14 0
-block wire 13 14 0
-block repeater 13 15 0 2
+tree 1.4539919 7.6834173 10
 block stone 12 12 0
+block repeater 13 15 0 2
+block wire 13 14 0
+block wire 14 14 0
+block wire 15 14 0
+block inverter 15 11 0 1
+block wire 14 11 0
+block wire 14 13 0
+block repeater 15 9 0 3
+block wire 14 9 0
+block repeater 14 10 0 0
+block wire 14 12 0

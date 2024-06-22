@@ -1,19 +1,6 @@
-rock 6.7201405 -17.981808 9
 rock 9.590287 -21.147905 7
+rock 6.7201405 -17.981808 9
 tree 14.330109 -27.836874 9
-block stone 4 -27 0
-block stone 4 -29 0
-block stone 7 -25 0
-block stone 15 -20 0
-block stone 14 -19 0
-block stone 13 -18 0
-block stone 12 -17 0
-block wood 13 -22 
-block wood 14 -23 
-block wood 15 -24 
-block stone 12 -24 0
-block stone 11 -26 0
-block stone 11 -25 0
 block wood 12 -21 
 block wood 11 -20 
 block wood 10 -19 
@@ -30,3 +17,16 @@ block stone 5 -26 0
 block stone 6 -27 0
 block stone 0 -18 0
 block stone 7 -27 0
+block stone 11 -25 0
+block stone 11 -26 0
+block stone 12 -24 0
+block wood 15 -24 
+block wood 14 -23 
+block wood 13 -22 
+block stone 12 -17 0
+block stone 13 -18 0
+block stone 14 -19 0
+block stone 15 -20 0
+block stone 7 -25 0
+block stone 4 -29 0
+block stone 4 -27 0

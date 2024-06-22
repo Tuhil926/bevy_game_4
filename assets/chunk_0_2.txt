@@ -1,9 +1,6 @@
 rock 4.8480196 33.877872 10
-tree 4.8103495 39.22218 10
 tree 1.3063011 38.13543 10
-block wire 7 37 0
-block wire 8 36 0
-block wire 9 37 0
+tree 4.8103495 39.22218 10
 block wire 8 37 0
 block wire 15 37 0
 block wire 8 35 0
@@ -16,3 +13,6 @@ block wire 12 35 0
 block wire 13 34 0
 block wire 15 35 0
 block wire 15 34 0
+block wire 8 36 0
+block wire 9 37 0
+block wire 7 37 0

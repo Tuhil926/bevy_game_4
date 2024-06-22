@@ -1,74 +1,74 @@
-block wire 16 26 128
-block wire 19 24 0
-block wire 23 23 123
-block inverter 22 23 0 1
+block wire 30 16 126
+block wire 26 17 126
+block wire 26 24 0
+block inverter 22 25 0 2
+block wire 21 26 0
+block inverter 22 23 1 1
 block inverter 24 27 0 3
-block wire 17 26 127
-block repeater 17 25 1 0
-block inverter 18 24 0 3
-block inverter 19 25 1 2
+block wire 17 26 0
+block repeater 17 25 0 0
+block inverter 18 24 1 3
+block inverter 19 25 0 2
 block wire 20 18 0
 block wire 20 16 0
-block inverter 24 16 0 3
-block inverter 24 18 1 3
-block inverter 18 26 0 3
-block inverter 22 27 0 3
-block inverter 21 25 0 0
-block wire 22 24 0
-block wire 27 17 125
-block wire 28 16 0
-block inverter 28 17 0 3
-block wire 31 16 0
-block wire 17 24 128
-block wire 21 24 0
-block wire 24 23 124
-block wire 26 23 126
-block wire 26 17 126
-block wire 26 24 127
-block wire 30 16 0
-block wire 29 16 0
-block wire 26 25 128
-block wire 21 26 0
-block wire 26 26 127
-block wire 17 16 128
-block inverter 16 16 1 3
-block inverter 18 16 0 3
-block wire 24 17 128
-block wire 25 17 127
-block wire 23 16 113
-block wire 23 18 0
-block wire 22 18 0
-block wire 21 18 0
-block wire 20 17 0
-block wire 25 27 125
-block wire 25 23 125
-block inverter 22 25 1 2
-block inverter 23 26 0 2
-block wire 21 27 0
-block wire 23 25 128
-block inverter 24 24 0 2
-block wire 24 25 127
-block inverter 25 25 0 3
-block wire 26 27 126
-block wire 23 27 128
-block wire 19 26 128
-block inverter 20 26 0 3
-block wire 30 29 0
-block wire 29 29 0
-block wire 29 30 0
-block wire 29 31 0
-block wire 27 30 0
-block wire 26 29 0
-block wire 26 30 0
-block wire 26 31 0
-block wire 24 30 0
-block wire 23 30 0
-block wire 20 29 0
-block wire 20 31 0
-block wire 20 30 0
-block wire 30 26 0
-block wire 30 25 0
-block wire 30 24 0
-block wire 30 23 0
-block wire 31 26 0
 block wire 31 24 0
+block wire 31 26 0
+block wire 30 23 0
+block wire 30 24 0
+block inverter 24 16 1 3
+block wire 17 16 128
+block wire 16 26 0
+block wire 19 24 128
+block inverter 24 18 1 3
+block inverter 18 26 1 3
+block inverter 22 27 1 3
+block wire 30 26 0
+block wire 20 30 0
+block wire 20 31 0
+block wire 20 29 0
+block wire 23 30 0
+block wire 24 30 0
+block wire 26 31 0
+block wire 26 30 0
+block wire 26 29 0
+block wire 27 30 0
+block wire 29 31 0
+block wire 29 30 0
+block wire 29 29 0
+block wire 30 29 0
+block inverter 20 26 0 3
+block wire 19 26 128
+block wire 23 27 128
+block wire 26 27 0
+block inverter 25 25 0 3
+block wire 24 25 128
+block inverter 24 24 1 2
+block wire 23 25 127
+block wire 21 27 0
+block wire 23 23 0
+block inverter 23 26 0 2
+block wire 26 23 0
+block wire 26 25 0
+block wire 29 16 127
+block wire 26 26 0
+block wire 24 23 0
+block inverter 21 25 1 0
+block wire 22 24 128
+block wire 27 17 125
+block wire 28 16 128
+block inverter 28 17 0 3
+block wire 31 16 125
+block wire 17 24 0
+block wire 21 24 128
+block wire 30 25 0
+block wire 25 23 0
+block wire 25 27 0
+block wire 20 17 0
+block wire 21 18 0
+block wire 22 18 0
+block wire 23 18 0
+block wire 23 16 0
+block wire 25 17 127
+block wire 24 17 128
+block inverter 18 16 0 3
+block inverter 16 16 1 3
